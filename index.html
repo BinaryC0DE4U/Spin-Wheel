@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Spin Wheel </title>
+  <link rel="icon" href="spin.png" type="image/x-icon">
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: white;
+      font-family: 'Arial', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      text-align: center;
+      min-height: 100vh;
+      justify-content: flex-start;
+      padding: 20px;
+      text-align: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+
+    }
+
+    h2 {
+      margin-top: 5px;
+      font-size: 22px;
+      color: #00f2ff;
+    }
+
+    #user-choice {
+      margin-top: 1px;
+      margin-bottom: 30px;
+      padding: 8px 16px;
+      font-size: 20px;
+      border-radius: 10px;
+      border: 2px solid #00f2ff;
+      background-color: #222;
+      color: #00f2ff;
+      font-weight: bold;
+    }
+
+    .wheel-container {
+      position: relative;
+      width: 90vw;
+      max-width: 320px;
+      height: 90vw;
+      max-height: 320px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    #wheel {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 10px solid #fff;
+      transition: transform 5s ease-out;
+    }
+
+    .arrow {
+      position: absolute;
+      top: -20px;
+      left: 50%;
+      transform: translateX(-50%) rotate(180deg);
+      width: 0;
+      height: 0;
+      border-left: 20px solid transparent;
+      border-right: 20px solid transparent;
+      border-bottom: 30px solid red;
+    }
+
+
+    #spin-btn {
+      margin-top: 16px;
+      padding: 6px 25px;
+      background: #00f2ff;
+      border: none;
+      border-radius: 10px;
+      color: #000;
+      font-weight: bold;
+      font-size: 20px;
+      cursor: pointer;
+      box-shadow: 0 0 10px #00f2ff;
+      transition: transform 0.2s ease;
+
+    }
+
+    #spin-btn:hover {
+      transform: scale(1.05);
+    }
+
+    .footer {
+      margin-top: 10px;
+      padding: 0px;
+      /* transparent background */
+      border-radius: 12px;
+      text-align: center;
+      width: 100%;
+      max-width: 400px;
+      margin-bottom: 3px;
+    }
+
+    .social-icons {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .social-icon {
+      color: #00f2ff;
+      font-size: 20px;
+      transition: transform 0.3s, color 0.3s;
+    }
+
+    .social-icon:hover {
+      transform: scale(1.2);
+      color: #fff;
+    }
+
+    .footer-message {
+      font-size: 18px;
+      color: #ffffffcc;
+      margin-bottom: 10px;
+      font-weight: 500;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .footer-message {
+      text-shadow: 0 0 5px #00f2ff88, 0 0 10px #00f2ff44;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h2>Guess the Number (1-6)</h2>
+  <select id="user-choice">
+    <option value="1">1</option>
+    <option value="2">2</option>
+    <option value="3">3</option>
+    <option value="4">4</option>
+    <option value="5">5</option>
+    <option value="6">6</option>
+  </select>
+
+  <div class="wheel-container">
+    <div class="arrow"></div>
+    <canvas id="wheel"></canvas>
+  </div>
+
+  <button id="spin-btn">SPIN</button>
+
+  <footer class="footer">
+    <p class="footer-message">Let's connect</p>
+    <div class="social-icons">
+      <a href="https://www.linkedin.com/in/mr-dhananjay-patil-0172902a2/" target="_blank" class="social-icon linkedin">
+        <i class="fab fa-linkedin-in"></i>
+      </a>
+      <a href="https://github.com/BinaryC0DE4U" target="_blank" class="social-icon github">
+        <i class="fab fa-github"></i>
+      </a>
+    </div>
+  </footer>
+
+
+
+  <!-- 🎉 Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+
+  <!-- 🔊 Sounds -->
+  <audio id="spin-sound" src="spin.mp3"></audio>
+  <audio id="confetti-sound" src="Popper.mp3" preload="auto"></audio>
+
+  <script>
+    const options = ["1", "2", "3", "4", "5", "6"];
+    const colors = ["#FF5733", "#FFC300", "#DAF7A6", "#C70039", "#900C3F", "#581845"];
+    const canvas = document.getElementById("wheel");
+    const ctx = canvas.getContext("2d");
+    const spinBtn = document.getElementById("spin-btn");
+    const userChoice = document.getElementById("user-choice");
+    const spinSound = document.getElementById("spin-sound");
+    const winSound = document.getElementById("win-sound");
+
+    canvas.width = 300;
+    canvas.height = 300;
+    const outsideRadius = 140;
+    const textRadius = 110;
+
+    let startAngle = 0;
+    const arc = Math.PI / (options.length / 2);
+    let spinAngleStart = 0;
+    let spinTime = 0;
+    let spinTimeTotal = 0;
+    let spinning = false;
+    let targetIndex = 0;
+
+    function drawWheel() {
+      let angle = startAngle;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let i = 0; i < options.length; i++) {
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.beginPath();
+        ctx.moveTo(150, 150);
+        ctx.arc(150, 150, outsideRadius, angle, angle + arc, false);
+        ctx.lineTo(150, 150);
+        ctx.fill();
+
+        ctx.save();
+        ctx.fillStyle = "black";
+        ctx.translate(
+          150 + Math.cos(angle + arc / 2) * textRadius,
+          150 + Math.sin(angle + arc / 2) * textRadius
+        );
+        ctx.rotate(angle + arc / 2);
+        ctx.font = "bold 26px Arial"; // 🔥 Change font size here
+        ctx.fillText(options[i], -ctx.measureText(options[i]).width / 2, 0);
+        ctx.restore();
+        angle += arc;
+      }
+    }
+
+    function easeOut(t, b, c, d) {
+      const ts = (t /= d) * t;
+      const tc = ts * t;
+      return b + c * (tc + -3 * ts + 3 * t);
+    }
+
+    function rotateWheel() {
+      spinTime += 30;
+      if (spinTime >= spinTimeTotal) {
+        stopRotateWheel();
+        return;
+      }
+      const spinAngle = spinAngleStart - easeOut(spinTime, 0, spinAngleStart, spinTimeTotal);
+      startAngle += (spinAngle * Math.PI / 180);
+      drawWheel();
+      requestAnimationFrame(rotateWheel);
+    }
+
+    function stopRotateWheel() {
+      spinSound.pause();
+      spinSound.currentTime = 0;
+
+      const degrees = startAngle * 180 / Math.PI + 90;
+      const arcd = arc * 180 / Math.PI;
+      const index = Math.floor((360 - (degrees % 360)) / arcd) % options.length;
+      const result = options[index];
+      const userPicked = userChoice.value;
+
+      spinning = false;
+
+      if (result === userPicked) {
+        confettiEffect();
+        winSound.play();
+        setTimeout(() => {
+          alert(`🎉 You WON! The wheel stopped at ${result}`);
+        }, 300);
+      } else {
+        setTimeout(() => {
+          alert(`😢 Try Again! The wheel stopped at ${result}`);
+        }, 300);
+      }
+    }
+
+    function confettiEffect() {
+      const popSound = document.getElementById("confetti-sound");
+      popSound.currentTime = 0;
+      popSound.play();
+
+      const confettiCanvas = document.getElementById("confetti-canvas");
+      const confettiObj = confetti.create(confettiCanvas, { resize: true, useWorker: true });
+
+      const wheel = document.getElementById("wheel");
+      const rect = wheel.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const originX = centerX / window.innerWidth;
+      const originY = centerY / window.innerHeight;
+
+      for (let i = 0; i < 3; i++) {
+        setTimeout(() => {
+          confettiObj({
+            particleCount: 120,
+            spread: 120,
+            angle: 60 + i * 30,
+            startVelocity: 45,
+            origin: { x: originX, y: originY }
+          });
+        }, i * 150);
+      }
+
+      setTimeout(() => {
+        const ctx = confettiCanvas.getContext("2d");
+        ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+      }, 3000);
+    }
+
+    spinBtn.addEventListener("click", () => {
+      if (spinning) return;
+      spinning = true;
+      spinSound.play();
+
+      const userPicked = userChoice.value;
+      const userIndex = options.indexOf(userPicked);
+
+      // 🎯 90% Chance of Win
+      const isWin = Math.random() < 0.9;
+
+      if (isWin) {
+        targetIndex = userIndex;
+      } else {
+        const otherOptions = options.filter((_, idx) => idx !== userIndex);
+        const random = otherOptions[Math.floor(Math.random() * otherOptions.length)];
+        targetIndex = options.indexOf(random);
+      }
+
+      const anglePerSlice = 360 / options.length;
+      const randomTurns = Math.floor(Math.random() * 3) + 8; // 8 to 10 full spins
+      const stopAngle = (360 * randomTurns) + (anglePerSlice * targetIndex) + (anglePerSlice / 2);
+      spinAngleStart = stopAngle;
+      spinTime = 0;
+      spinTimeTotal = 3000;
+
+      rotateWheel();
+    });
+
+    drawWheel();
+  </script>
+
+
+
+  <canvas id="confetti-canvas"
+    style="position:fixed; top:0; left:0; pointer-events:none; width:100vw; height:100vh; z-index:999;"></canvas>
+
+
+</body>
+
+</html>
